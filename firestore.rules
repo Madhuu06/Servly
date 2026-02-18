@@ -1,0 +1,59 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Helper function to check if user owns the document
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // Users collection
+    match /users/{userId} {
+      // Users can read their own document
+      allow read: if isOwner(userId);
+      
+      // Users can create their own document during signup
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+      
+      // Users can update their own document
+      allow update: if isOwner(userId);
+      
+      // Users can delete their own document
+      allow delete: if isOwner(userId);
+    }
+    
+    // Providers collection (for map queries)
+    match /providers/{providerId} {
+      // Anyone (authenticated or not) can read provider data for the map
+      allow read: if true;
+      
+      // Only the provider can create their document
+      allow create: if isAuthenticated() && request.auth.uid == providerId;
+      
+      // Only the provider can update their document
+      allow update: if isOwner(providerId);
+      
+      // Only the provider can delete their document
+      allow delete: if isOwner(providerId);
+      
+      // Reviews subcollection
+      match /reviews/{reviewId} {
+        // Anyone can read reviews
+        allow read: if true;
+        
+        // Authenticated users can create reviews
+        allow create: if isAuthenticated();
+        
+        // Users can update/delete their own reviews
+        allow update, delete: if isAuthenticated() && 
+          request.auth.uid == resource.data.userId;
+      }
+    }
+  }
+}

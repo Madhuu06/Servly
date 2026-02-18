@@ -1,28 +1,30 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { User, Phone, ArrowRight, Briefcase, MapPin, Shield, Navigation } from 'lucide-react';
+import { User, Mail, Lock, ArrowRight, Briefcase, MapPin, Navigation } from 'lucide-react';
 import { categories } from '../data/services';
 
 const Signup = () => {
-    const [step, setStep] = useState(1); // 1: User type & basic info, 2: Provider details, 3: OTP verification
+    const [step, setStep] = useState(1); // 1: User type & basic info, 2: Provider details
     const [userType, setUserType] = useState('customer');
     const [formData, setFormData] = useState({
         name: '',
-        phone: '',
+        email: '',
+        password: '',
+        confirmPassword: '',
         category: '',
         description: '',
         address: '',
         latitude: null,
         longitude: null
     });
-    const [otp, setOtp] = useState('');
-    const [confirmationResult, setConfirmationResult] = useState(null);
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [isGettingLocation, setIsGettingLocation] = useState(false);
+    const [serviceSearch, setServiceSearch] = useState('');
+    const [showServiceDropdown, setShowServiceDropdown] = useState(false);
 
-    const { sendOTP, verifyOTP } = useAuth();
+    const { signup } = useAuth();
     const navigate = useNavigate();
 
     const handleChange = (e) => {
@@ -38,8 +40,20 @@ const Signup = () => {
             setError('Please enter your name');
             return false;
         }
-        if (!formData.phone.trim()) {
-            setError('Please enter your phone number');
+        if (!formData.email.trim()) {
+            setError('Please enter your email');
+            return false;
+        }
+        if (!formData.password) {
+            setError('Please enter a password');
+            return false;
+        }
+        if (formData.password.length < 6) {
+            setError('Password must be at least 6 characters');
+            return false;
+        }
+        if (formData.password !== formData.confirmPassword) {
+            setError('Passwords do not match');
             return false;
         }
         return true;
@@ -102,31 +116,36 @@ const Signup = () => {
     const handleNextStep = () => {
         if (step === 1 && validateStep1()) {
             if (userType === 'customer') {
-                // Skip step 2 for customers, go directly to OTP
-                handleSendOTP();
+                // Customers can signup directly
+                handleSignup();
             } else {
                 setStep(2);
             }
         } else if (step === 2 && validateStep2()) {
-            handleSendOTP();
+            handleSignup();
         }
     };
 
-    const handleSendOTP = async () => {
+    const handleSignup = async () => {
         setError('');
         setIsLoading(true);
 
-        // Format phone number to E.164 format
-        let formattedPhone = formData.phone.trim();
-        if (!formattedPhone.startsWith('+')) {
-            formattedPhone = '+91' + formattedPhone;
-        }
+        const userData = {
+            name: formData.name,
+            userType: userType,
+            ...(userType === 'provider' && {
+                category: formData.category,
+                description: formData.description,
+                address: formData.address,
+                latitude: formData.latitude,
+                longitude: formData.longitude
+            })
+        };
 
-        const result = await sendOTP(formattedPhone);
+        const result = await signup(formData.email, formData.password, userData);
 
         if (result.success) {
-            setConfirmationResult(result.confirmationResult);
-            setStep(3);
+            navigate(userType === 'provider' ? '/provider-dashboard' : '/');
         } else {
             setError(result.error);
         }
@@ -162,10 +181,32 @@ const Signup = () => {
 
     const serviceCategories = categories.filter(c => c.id !== 'all');
 
+    // Filter services based on search query
+    const filteredServices = serviceCategories.filter(service =>
+        service.label.toLowerCase().includes(serviceSearch.toLowerCase())
+    );
+
+    // Handle service search input
+    const handleServiceSearch = (e) => {
+        const value = e.target.value;
+        setServiceSearch(value);
+        setShowServiceDropdown(value.length > 0);
+        setError('');
+    };
+
+    // Handle service selection from dropdown
+    const handleServiceSelect = (service) => {
+        setFormData(prev => ({
+            ...prev,
+            category: service.label
+        }));
+        setServiceSearch(service.label);
+        setShowServiceDropdown(false);
+        setError('');
+    };
+
     return (
         <div className="min-h-screen bg-[#E8E4C9] flex items-center justify-center p-4">
-            {/* reCAPTCHA container */}
-            <div id="recaptcha-container"></div>
 
             <div className="w-full max-w-md">
                 {/* Main Card */}
@@ -190,10 +231,6 @@ const Signup = () => {
                                         <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${step >= 2 ? 'bg-[#2D2D2D] text-white' : 'bg-gray-200 text-gray-500'}`}>2</div>
                                     </>
                                 )}
-                                <div className={`w-8 h-1 rounded ${step >= 3 ? 'bg-[#2D2D2D]' : 'bg-gray-200'}`}></div>
-                                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${step >= 3 ? 'bg-[#2D2D2D] text-white' : 'bg-gray-200 text-gray-500'}`}>
-                                    {userType === 'provider' ? '3' : '2'}
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -202,14 +239,12 @@ const Signup = () => {
                         {/* Title */}
                         <div className="mb-6">
                             <h1 className="text-3xl font-bold text-gray-900 leading-tight">
-                                {step === 1 ? 'Create Account' : step === 2 ? 'Service Details' : 'Verify OTP'}
+                                {step === 1 ? 'Create Account' : 'Service Details'}
                             </h1>
                             <p className="text-gray-500 mt-2">
                                 {step === 1
                                     ? 'Join Servly to get started'
-                                    : step === 2
-                                        ? 'Tell us about your services'
-                                        : `Enter the code sent to ${formData.phone}`
+                                    : 'Tell us about your services'
                                 }
                             </p>
                         </div>
@@ -263,22 +298,44 @@ const Signup = () => {
                                     />
                                 </div>
 
-                                {/* Phone */}
+                                {/* Email */}
                                 <div className="relative">
-                                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                                     <input
-                                        type="tel"
-                                        name="phone"
-                                        value={formData.phone}
+                                        type="email"
+                                        name="email"
+                                        value={formData.email}
                                         onChange={handleChange}
                                         className="w-full pl-12 pr-4 py-4 bg-gray-50 border-0 rounded-2xl focus:ring-2 focus:ring-[#2D2D2D] outline-none transition text-gray-800 placeholder-gray-400"
-                                        placeholder="Phone Number"
+                                        placeholder="Email Address"
                                     />
                                 </div>
 
-                                <p className="text-xs text-gray-500 text-center">
-                                    Format: 9876543210 or +919876543210
-                                </p>
+                                {/* Password */}
+                                <div className="relative">
+                                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                    <input
+                                        type="password"
+                                        name="password"
+                                        value={formData.password}
+                                        onChange={handleChange}
+                                        className="w-full pl-12 pr-4 py-4 bg-gray-50 border-0 rounded-2xl focus:ring-2 focus:ring-[#2D2D2D] outline-none transition text-gray-800 placeholder-gray-400"
+                                        placeholder="Password (min 6 characters)"
+                                    />
+                                </div>
+
+                                {/* Confirm Password */}
+                                <div className="relative">
+                                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                    <input
+                                        type="password"
+                                        name="confirmPassword"
+                                        value={formData.confirmPassword}
+                                        onChange={handleChange}
+                                        className="w-full pl-12 pr-4 py-4 bg-gray-50 border-0 rounded-2xl focus:ring-2 focus:ring-[#2D2D2D] outline-none transition text-gray-800 placeholder-gray-400"
+                                        placeholder="Confirm Password"
+                                    />
+                                </div>
 
                                 {/* Next Button */}
                                 <button
@@ -299,22 +356,42 @@ const Signup = () => {
                             </div>
                         ) : step === 2 ? (
                             <div className="space-y-4">
-                                {/* Category */}
+                                {/* Service Search */}
                                 <div className="relative">
                                     <Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                                    <select
-                                        name="category"
-                                        value={formData.category}
-                                        onChange={handleChange}
-                                        className="w-full pl-12 pr-4 py-4 bg-gray-50 border-0 rounded-2xl focus:ring-2 focus:ring-[#2D2D2D] outline-none transition text-gray-800 appearance-none"
-                                    >
-                                        <option value="">Select Category</option>
-                                        {serviceCategories.map(cat => (
-                                            <option key={cat.id} value={cat.label}>
-                                                {cat.label}
-                                            </option>
-                                        ))}
-                                    </select>
+                                    <input
+                                        type="text"
+                                        name="serviceSearch"
+                                        value={serviceSearch}
+                                        onChange={handleServiceSearch}
+                                        onFocus={() => serviceSearch && setShowServiceDropdown(true)}
+                                        className="w-full pl-12 pr-4 py-4 bg-gray-50 border-0 rounded-2xl focus:ring-2 focus:ring-[#2D2D2D] outline-none transition text-gray-800 placeholder-gray-400"
+                                        placeholder="Type your service (e.g., Electrician, Plumber)"
+                                        autoComplete="off"
+                                    />
+
+                                    {/* Service Dropdown */}
+                                    {showServiceDropdown && filteredServices.length > 0 && (
+                                        <div className="absolute z-10 w-full mt-2 bg-white rounded-2xl shadow-lg border border-gray-100 max-h-48 overflow-y-auto">
+                                            {filteredServices.map(service => (
+                                                <button
+                                                    key={service.id}
+                                                    type="button"
+                                                    onClick={() => handleServiceSelect(service)}
+                                                    className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors first:rounded-t-2xl last:rounded-b-2xl flex items-center gap-3"
+                                                >
+                                                    <span className="text-gray-800">{service.label}</span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {/* No results message */}
+                                    {showServiceDropdown && serviceSearch && filteredServices.length === 0 && (
+                                        <div className="absolute z-10 w-full mt-2 bg-white rounded-2xl shadow-lg border border-gray-100 px-4 py-3">
+                                            <p className="text-gray-500 text-sm">No services found. Try a different search.</p>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Description */}
@@ -391,58 +468,13 @@ const Signup = () => {
                                             <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                                         ) : (
                                             <>
-                                                <span>Send OTP</span>
+                                                <span>Create Account</span>
                                                 <ArrowRight className="w-5 h-5" />
                                             </>
                                         )}
                                     </button>
                                 </div>
                             </div>
-                        ) : (
-                            <form onSubmit={handleVerifyOTP} className="space-y-5">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        OTP Code
-                                    </label>
-                                    <div className="relative">
-                                        <Shield className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                                        <input
-                                            type="text"
-                                            value={otp}
-                                            onChange={(e) => setOtp(e.target.value)}
-                                            className="w-full pl-12 pr-4 py-4 bg-gray-50 border-0 rounded-2xl focus:ring-2 focus:ring-[#2D2D2D] outline-none transition text-gray-800 placeholder-gray-400 text-center text-2xl tracking-widest"
-                                            placeholder="000000"
-                                            maxLength={6}
-                                            required
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* Verify Button */}
-                                <button
-                                    type="submit"
-                                    disabled={isLoading}
-                                    className="w-full bg-[#2D2D2D] text-white py-4 rounded-full font-medium flex items-center justify-center gap-3 hover:bg-[#1a1a1a] transition-all disabled:opacity-70 mt-8"
-                                >
-                                    {isLoading ? (
-                                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                    ) : (
-                                        <>
-                                            <span>Create Account</span>
-                                            <ArrowRight className="w-5 h-5" />
-                                        </>
-                                    )}
-                                </button>
-
-                                {/* Change Number */}
-                                <button
-                                    type="button"
-                                    onClick={() => setStep(userType === 'provider' ? 2 : 1)}
-                                    className="w-full text-sm text-gray-600 hover:text-gray-900 transition"
-                                >
-                                    Change phone number
-                                </button>
-                            </form>
                         )}
 
                         {/* Footer */}

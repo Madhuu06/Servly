@@ -1,13 +1,14 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import {
-    signInWithPhoneNumber,
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword,
     signOut,
     onAuthStateChanged,
     updateProfile,
     deleteUser
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, deleteDoc, getDocs, writeBatch, collection } from 'firebase/firestore';
-import { auth, db, setupRecaptcha } from '../config/firebase';
+import { auth, db } from '../config/firebase';
 
 const AuthContext = createContext(null);
 
@@ -48,76 +49,68 @@ export const AuthProvider = ({ children }) => {
         return () => unsubscribe();
     }, []);
 
-    // Send OTP to phone number
-    const sendOTP = async (phoneNumber) => {
+    // Sign up with email and password
+    const signup = async (email, password, userData) => {
         try {
-            // Setup reCAPTCHA
-            const recaptchaVerifier = setupRecaptcha('recaptcha-container');
+            // Create user with email and password
+            const result = await createUserWithEmailAndPassword(auth, email, password);
+            const firebaseUser = result.user;
 
-            // Send OTP
-            const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, recaptchaVerifier);
+            // Update display name
+            await updateProfile(firebaseUser, { displayName: userData.name });
 
-            return { success: true, confirmationResult };
+            const userDocData = {
+                uid: firebaseUser.uid,
+                email: firebaseUser.email,
+                name: userData.name,
+                userType: userData.userType,
+                createdAt: new Date().toISOString(),
+                ...(userData.userType === 'provider' && {
+                    category: userData.category,
+                    description: userData.description,
+                    address: userData.address,
+                    latitude: userData.latitude || null,
+                    longitude: userData.longitude || null,
+                    rating: 0,
+                    reviewCount: 0,
+                    isVerified: false
+                })
+            };
+
+            // Save to users collection
+            await setDoc(doc(db, 'users', firebaseUser.uid), userDocData);
+
+            // If provider, also save to providers collection for map queries
+            if (userData.userType === 'provider') {
+                await setDoc(doc(db, 'providers', firebaseUser.uid), userDocData);
+            }
+
+            setUserData(userDocData);
+
+            return { success: true, userType: userData.userType };
         } catch (error) {
-            console.error('Error sending OTP:', error);
+            console.error('Signup error:', error);
             return { success: false, error: getErrorMessage(error.code) };
         }
     };
 
-    // Verify OTP and complete signup/login
-    const verifyOTP = async (confirmationResult, otp, userData = null) => {
+    // Login with email and password
+    const login = async (email, password) => {
         try {
-            // Verify OTP
-            const result = await confirmationResult.confirm(otp);
+            const result = await signInWithEmailAndPassword(auth, email, password);
             const firebaseUser = result.user;
 
-            let userType = 'customer';
-
-            // If userData is provided, this is a signup - save user data
-            if (userData) {
-                await updateProfile(firebaseUser, { displayName: userData.name });
-
-                const userDocData = {
-                    uid: firebaseUser.uid,
-                    phone: firebaseUser.phoneNumber,
-                    name: userData.name,
-                    userType: userData.userType,
-                    createdAt: new Date().toISOString(),
-                    ...(userData.userType === 'provider' && {
-                        category: userData.category,
-                        description: userData.description,
-                        address: userData.address,
-                        latitude: userData.latitude || null,
-                        longitude: userData.longitude || null,
-                        rating: 0,
-                        reviewCount: 0,
-                        isVerified: false
-                    })
-                };
-
-                // Save to users collection
-                await setDoc(doc(db, 'users', firebaseUser.uid), userDocData);
-
-                // If provider, also save to providers collection for map queries
-                if (userData.userType === 'provider') {
-                    await setDoc(doc(db, 'providers', firebaseUser.uid), userDocData);
-                }
-
-                setUserData(userDocData);
-                userType = userData.userType;
+            // Fetch user data from Firestore
+            const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+            if (userDoc.exists()) {
+                const existingUserData = userDoc.data();
+                setUserData(existingUserData);
+                return { success: true, userType: existingUserData.userType || 'customer' };
             } else {
-                // This is a login - fetch existing user data
-                const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
-                if (userDoc.exists()) {
-                    const existingUserData = userDoc.data();
-                    setUserData(existingUserData);
-                    userType = existingUserData.userType || 'customer';
-                }
+                return { success: false, error: 'User data not found' };
             }
-
-            return { success: true, userType };
         } catch (error) {
-            console.error('OTP verification error:', error);
+            console.error('Login error:', error);
             return { success: false, error: getErrorMessage(error.code) };
         }
     };
@@ -194,18 +187,20 @@ export const AuthProvider = ({ children }) => {
 
     const getErrorMessage = (errorCode) => {
         switch (errorCode) {
-            case 'auth/invalid-phone-number':
-                return 'Invalid phone number format';
-            case 'auth/missing-phone-number':
-                return 'Please enter a phone number';
-            case 'auth/quota-exceeded':
-                return 'SMS quota exceeded. Please try again later';
-            case 'auth/invalid-verification-code':
-                return 'Invalid OTP. Please check and try again';
-            case 'auth/code-expired':
-                return 'OTP has expired. Please request a new one';
+            case 'auth/email-already-in-use':
+                return 'This email is already registered. Please login instead';
+            case 'auth/invalid-email':
+                return 'Invalid email address format';
+            case 'auth/weak-password':
+                return 'Password should be at least 6 characters';
+            case 'auth/user-not-found':
+                return 'No account found with this email';
+            case 'auth/wrong-password':
+                return 'Incorrect password. Please try again';
             case 'auth/too-many-requests':
                 return 'Too many attempts. Please try again later';
+            case 'auth/network-request-failed':
+                return 'Network error. Please check your connection';
             default:
                 return 'An error occurred. Please try again';
         }
@@ -215,8 +210,8 @@ export const AuthProvider = ({ children }) => {
         user,
         userData,
         loading,
-        sendOTP,
-        verifyOTP,
+        signup,
+        login,
         logout,
         deleteAccount,
         isAuthenticated: !!user,
