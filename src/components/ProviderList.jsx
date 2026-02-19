@@ -1,90 +1,69 @@
-import { useState } from 'react';
-import { ChevronUp, ChevronDown, Star, MapPin } from 'lucide-react';
+import { Star, MapPin } from 'lucide-react';
 import StarRating from './StarRating';
 
-const ProviderList = ({ services, onSelectService }) => {
-    const [isOpen, setIsOpen] = useState(false);
-
+const ProviderList = ({ services, onSelectService, selectedService }) => {
     return (
-        <div
-            className={`fixed left-0 right-0 bg-white shadow-[0_-5px_30px_rgba(0,0,0,0.1)] z-[900] transition-all duration-300 ease-in-out rounded-t-2xl
-        ${isOpen ? 'bottom-0 h-[60vh]' : 'bottom-0 h-14'}`}
-        >
-            {/* Header / Toggle */}
-            <button
-                onClick={() => setIsOpen(!isOpen)}
-                className="w-full h-14 flex items-center justify-center relative border-b border-gray-100"
-            >
-                <span className="text-sm font-semibold text-gray-500 absolute left-6">
-                    {services.length} Providers Nearby
-                </span>
-                <div className="w-10 h-1 bg-gray-200 rounded-full" />
-                {isOpen ? (
-                    <ChevronDown className="w-5 h-5 text-gray-400 absolute right-6" />
-                ) : (
-                    <ChevronUp className="w-5 h-5 text-gray-400 absolute right-6" />
-                )}
-            </button>
-
-            {/* List Content */}
-            <div className="h-full overflow-y-auto pb-20 px-4 pt-2">
-                {services.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-40 text-gray-400">
-                        <MapPin size={48} className="mb-2" />
-                        <p className="text-sm">No providers found</p>
-                    </div>
-                ) : (
-                    services.map((service, index) => (
-                        <div
-                            key={service.id || service.uid}
-                            onClick={() => {
-                                onSelectService(service);
-                                setIsOpen(false); // Close list when opening details
-                            }}
-                            className="flex items-center gap-4 p-4 border-b border-gray-50 hover:bg-gray-50 active:bg-blue-50 transition-colors rounded-xl cursor-pointer relative"
-                        >
-                            {/* Near Me Badge */}
-                            {index === 0 && service.distance && service.distance < 1 && (
-                                <div className="absolute top-2 right-2 bg-green-100 text-green-700 text-xs font-semibold px-2 py-0.5 rounded-full">
-                                    Near Me
+        <div className="flex-1 overflow-y-auto">
+            {services.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-64 text-gray-400 px-4">
+                    <MapPin size={40} className="mb-3 text-gray-300" />
+                    <p className="text-sm font-medium text-gray-500">No providers found</p>
+                    <p className="text-xs text-gray-400 mt-1 text-center">Try selecting a different category</p>
+                </div>
+            ) : (
+                <div className="divide-y divide-gray-50">
+                    {services.map((service) => {
+                        const isSelected = selectedService?.uid === service.uid || selectedService?.id === service.id;
+                        return (
+                            <div
+                                key={service.id || service.uid}
+                                onClick={() => onSelectService(service)}
+                                className={`flex items-start gap-3 p-4 cursor-pointer transition-colors
+                                    ${isSelected
+                                        ? 'bg-gray-900 text-white'
+                                        : 'hover:bg-gray-50 bg-white'
+                                    }`}
+                            >
+                                {/* Avatar */}
+                                <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-base font-bold shrink-0
+                                    ${isSelected ? 'bg-white text-gray-900' : 'bg-gradient-to-br from-blue-400 to-blue-600 text-white'}`}
+                                >
+                                    {service.name[0]}
                                 </div>
-                            )}
 
-                            {/* Avatar Placeholder */}
-                            <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-lg font-bold text-white shrink-0">
-                                {service.name[0]}
-                            </div>
-
-                            <div className="flex-1">
-                                <h3 className="font-semibold text-gray-900">{service.name}</h3>
-                                <div className="flex items-center text-sm text-gray-500 mt-0.5 gap-2">
-                                    <span className="text-primary font-medium">{service.category}</span>
+                                <div className="flex-1 min-w-0">
+                                    <h3 className={`font-semibold text-sm truncate ${isSelected ? 'text-white' : 'text-gray-900'}`}>
+                                        {service.name}
+                                    </h3>
+                                    <span className={`text-xs font-medium ${isSelected ? 'text-blue-300' : 'text-blue-600'}`}>
+                                        {service.category}
+                                    </span>
+                                    <div className="flex items-center gap-1 mt-1">
+                                        <StarRating rating={service.rating || 0} size={11} />
+                                        <span className={`text-xs ${isSelected ? 'text-gray-300' : 'text-gray-500'}`}>
+                                            ({(service.rating || 0).toFixed(1)})
+                                        </span>
+                                    </div>
                                     {service.distanceText && (
-                                        <>
-                                            <span>•</span>
-                                            <span className="flex items-center gap-1">
-                                                <MapPin className="w-3 h-3" />
-                                                {service.distanceText}
-                                            </span>
-                                        </>
+                                        <div className={`flex items-center gap-1 mt-1 text-xs ${isSelected ? 'text-gray-300' : 'text-gray-400'}`}>
+                                            <MapPin className="w-3 h-3" />
+                                            {service.distanceText}
+                                        </div>
                                     )}
                                 </div>
-                                {/* Star Rating */}
-                                <div className="mt-1">
-                                    <StarRating rating={service.rating || 0} size={14} />
-                                </div>
-                            </div>
 
-                            <div className="flex flex-col items-end gap-2">
-                                <div className="flex items-center gap-1 bg-yellow-50 px-2 py-1 rounded text-xs font-bold text-gray-700">
+                                {/* Rating badge */}
+                                <div className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold flex-shrink-0
+                                    ${isSelected ? 'bg-white/20 text-white' : 'bg-yellow-50 text-gray-700'}`}
+                                >
                                     <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
                                     {(service.rating || 0).toFixed(1)}
                                 </div>
                             </div>
-                        </div>
-                    ))
-                )}
-            </div>
+                        );
+                    })}
+                </div>
+            )}
         </div>
     );
 };
