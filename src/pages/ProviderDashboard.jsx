@@ -162,8 +162,8 @@ export default function ProviderDashboard() {
                             <User className="w-6 h-6 text-white" />
                         </div>
                         <div>
-                            <h1 className="font-bold text-gray-900">{user?.name || 'Provider'}</h1>
-                            <p className="text-sm text-gray-500">{user?.category || 'Service Provider'}</p>
+                            <h1 className="font-bold text-gray-900">{userData?.name || 'Provider'}</h1>
+                            <p className="text-sm text-gray-500">{userData?.category || 'Service Provider'}</p>
                         </div>
                     </div>
                     <div className="flex items-center gap-4">

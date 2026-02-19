@@ -152,32 +152,7 @@ const Signup = () => {
         setIsLoading(false);
     };
 
-    const handleVerifyOTP = async (e) => {
-        e.preventDefault();
-        setError('');
-        setIsLoading(true);
 
-        const userData = {
-            name: formData.name,
-            userType: userType,
-            ...(userType === 'provider' && {
-                category: formData.category,
-                description: formData.description,
-                address: formData.address,
-                latitude: formData.latitude,
-                longitude: formData.longitude
-            })
-        };
-
-        const result = await verifyOTP(confirmationResult, otp, userData);
-
-        if (result.success) {
-            navigate(userType === 'provider' ? '/provider-dashboard' : '/');
-        } else {
-            setError(result.error);
-        }
-        setIsLoading(false);
-    };
 
     const serviceCategories = categories.filter(c => c.id !== 'all');
 
@@ -475,7 +450,7 @@ const Signup = () => {
                                     </button>
                                 </div>
                             </div>
-                        )}
+                        ) : null}
 
                         {/* Footer */}
                         <div className="mt-8 text-center">

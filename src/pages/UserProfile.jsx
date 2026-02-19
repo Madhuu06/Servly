@@ -5,7 +5,7 @@ import { db, storage } from '../config/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import {
-    User, MapPin, LogOut,
+    User, MapPin, LogOut, Phone, MessageCircle,
     ChevronLeft, Edit2, Bell, Trash2,
     HelpCircle, Shield, Info, ChevronRight, Camera
 } from 'lucide-react';
@@ -20,7 +20,7 @@ const UserProfile = () => {
     const fileInputRef = useRef(null);
     const [formData, setFormData] = useState({
         name: userData?.name || '',
-        phone: userData?.phone || '',
+        email: userData?.email || '',
         area: userData?.area || ''
     });
 
@@ -147,9 +147,9 @@ const UserProfile = () => {
                                 {userData?.name || 'User'}
                             </h2>
 
-                            {/* Phone */}
+                            {/* Email */}
                             <p className="text-gray-500 mt-1">
-                                {userData?.phone || user?.phoneNumber || 'Not set'}
+                                {userData?.email || user?.email || 'Not set'}
                             </p>
                         </div>
 
@@ -201,14 +201,14 @@ const UserProfile = () => {
                                 </div>
                             </div>
 
-                            {/* Phone Number */}
+                            {/* Email */}
                             <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
                                     <Phone className="w-5 h-5 text-gray-600" />
                                 </div>
                                 <div className="flex-1">
-                                    <p className="text-xs text-gray-500 mb-1">Phone Number</p>
-                                    <p className="font-medium text-gray-900">{userData?.phone || 'Not set'}</p>
+                                    <p className="text-xs text-gray-500 mb-1">Email Address</p>
+                                    <p className="font-medium text-gray-900">{userData?.email || user?.email || 'Not set'}</p>
                                 </div>
                             </div>
 
@@ -247,7 +247,7 @@ const UserProfile = () => {
                                             setIsEditing(false);
                                             setFormData({
                                                 name: userData?.name || '',
-                                                phone: userData?.phone || '',
+                                                email: userData?.email || '',
                                                 area: userData?.area || ''
                                             });
                                         }}

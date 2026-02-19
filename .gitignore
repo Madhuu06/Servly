@@ -27,3 +27,7 @@ npm-debug.log*
 # OS files
 .DS_Store
 Thumbs.db
+
+# Temp build logs
+build_log.txt
+build_output.txt
