@@ -62,15 +62,11 @@ const SearchBar = ({ selectedCategory, onSelectCategory, searchTerm, onSearchCha
                 {/* Avatar */}
                 <button
                     onClick={() => navigate('/profile')}
-                    className="flex items-center gap-2.5 bg-gray-100 hover:bg-gray-200 rounded-full pl-2 pr-3 py-1.5 transition-colors flex-shrink-0"
+                    className="w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold hover:opacity-80 transition flex-shrink-0"
+                    style={{ backgroundColor: '#1A1A1A' }}
+                    title={userData?.name || 'Profile'}
                 >
-                    <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-white text-xs font-bold"
-                        style={{ backgroundColor: '#1A1A1A' }}>
-                        {getInitials(userData?.name)}
-                    </div>
-                    <span className="text-sm font-medium text-gray-700 hidden sm:block">
-                        {userData?.name?.split(' ')[0] || 'Account'}
-                    </span>
+                    {getInitials(userData?.name)}
                 </button>
             </div>
 

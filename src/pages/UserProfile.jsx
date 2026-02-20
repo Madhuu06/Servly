@@ -8,11 +8,11 @@ import {
     User, MapPin, LogOut, Mail,
     ChevronLeft, Edit2, Bell,
     Shield, Info, Camera,
-    CheckCircle, AlertCircle
+    CheckCircle, AlertCircle, Trash2
 } from 'lucide-react';
 
 const UserProfile = () => {
-    const { user, userData, logout, updateUserData } = useAuth();
+    const { user, userData, logout, deleteAccount, updateUserData } = useAuth();
     const navigate = useNavigate();
     const [isEditing, setIsEditing] = useState(false);
     const [profileImage, setProfileImage] = useState(userData?.photoURL || null);
@@ -20,6 +20,10 @@ const UserProfile = () => {
     const [isUploadingImage, setIsUploadingImage] = useState(false);
     const [saveStatus, setSaveStatus] = useState(null);
     const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [deleteConfirmText, setDeleteConfirmText] = useState('');
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [deleteError, setDeleteError] = useState('');
     const fileInputRef = useRef(null);
     const [formData, setFormData] = useState({
         name: userData?.name || '',
@@ -33,6 +37,22 @@ const UserProfile = () => {
     const handleLogout = async () => {
         await logout();
         navigate('/login');
+    };
+
+    const handleDeleteAccount = async () => {
+        if (deleteConfirmText !== 'DELETE') {
+            setDeleteError('Type DELETE exactly to confirm.');
+            return;
+        }
+        setIsDeleting(true);
+        setDeleteError('');
+        const result = await deleteAccount();
+        if (result.success) {
+            navigate('/login');
+        } else {
+            setDeleteError(result.error || 'Failed to delete account.');
+            setIsDeleting(false);
+        }
     };
 
     const handleSave = async () => {
@@ -265,6 +285,17 @@ const UserProfile = () => {
                                 </div>
                                 <p className="text-sm font-medium text-gray-900">Log Out</p>
                             </button>
+
+                            {/* Delete Account — providers only */}
+                            {userData?.userType === 'provider' && (
+                                <button onClick={() => { setShowDeleteModal(true); setDeleteConfirmText(''); setDeleteError(''); }}
+                                    className="w-full flex items-center gap-3 px-3 py-3 hover:bg-red-50 rounded-xl transition">
+                                    <div className="w-9 h-9 bg-red-50 rounded-xl flex items-center justify-center">
+                                        <Trash2 className="w-4 h-4 text-red-500" />
+                                    </div>
+                                    <p className="text-sm font-medium text-red-500">Delete Account</p>
+                                </button>
+                            )}
                         </div>
                     </div>
 
@@ -280,6 +311,54 @@ const UserProfile = () => {
                     </div>
                 </div>
             </main>
+
+            {/* ── Delete Account Modal ── */}
+            {showDeleteModal && (
+                <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+                        <div className="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center mb-4">
+                            <Trash2 className="w-6 h-6 text-red-500" />
+                        </div>
+                        <h3 className="text-lg font-bold text-gray-900 mb-1">Delete Account</h3>
+                        <p className="text-sm text-gray-500 mb-4">
+                            This will permanently delete your provider profile, all your reviews, and your account. This cannot be undone.
+                        </p>
+
+                        <p className="text-xs font-semibold text-gray-700 mb-2">Type <span className="font-mono bg-gray-100 px-1.5 py-0.5 rounded">DELETE</span> to confirm</p>
+                        <input
+                            type="text"
+                            value={deleteConfirmText}
+                            onChange={(e) => { setDeleteConfirmText(e.target.value); setDeleteError(''); }}
+                            placeholder="DELETE"
+                            className="w-full px-3 py-2.5 border border-gray-200 rounded-xl outline-none text-sm mb-3 font-mono tracking-widest"
+                        />
+
+                        {deleteError && (
+                            <p className="text-xs text-red-500 mb-3 flex items-center gap-1">
+                                <AlertCircle className="w-3.5 h-3.5" />{deleteError}
+                            </p>
+                        )}
+
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => setShowDeleteModal(false)}
+                                disabled={isDeleting}
+                                className="flex-1 py-2.5 bg-gray-100 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-200 transition"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleDeleteAccount}
+                                disabled={isDeleting || deleteConfirmText !== 'DELETE'}
+                                className="flex-1 py-2.5 text-white rounded-xl text-sm font-semibold transition disabled:opacity-40"
+                                style={{ backgroundColor: '#E53E3E' }}
+                            >
+                                {isDeleting ? 'Deleting...' : 'Delete Forever'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
