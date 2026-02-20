@@ -1,4 +1,4 @@
-import { Search, MapPin, Zap, Droplets, Wrench, Sparkles, Wind, LayoutGrid, ChevronDown, Phone } from 'lucide-react';
+import { Search, MapPin, Zap, Droplets, Wrench, Sparkles, Wind, LayoutGrid, ChevronDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { categories } from '../data/services';
@@ -7,7 +7,7 @@ const iconMap = {
     Zap, Droplets, Wrench, Sparkles, Wind, LayoutGrid
 };
 
-const SearchBar = ({ selectedCategory, onSelectCategory }) => {
+const SearchBar = ({ selectedCategory, onSelectCategory, searchTerm, onSearchChange }) => {
     const navigate = useNavigate();
     const { userData } = useAuth();
 
@@ -38,23 +38,27 @@ const SearchBar = ({ selectedCategory, onSelectCategory }) => {
                     <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
                 </button>
 
-                {/* Search */}
+                {/* Search — live wired */}
                 <div className="flex-1 max-w-lg flex items-center gap-2.5 bg-gray-50 border border-gray-200 focus-within:border-blue-400 focus-within:bg-white focus-within:ring-2 focus-within:ring-blue-100 rounded-xl px-4 py-2.5 transition-all">
                     <Search className="w-4 h-4 text-gray-400 flex-shrink-0" />
                     <input
                         type="text"
-                        placeholder="Search for a service..."
+                        value={searchTerm}
+                        onChange={(e) => onSearchChange(e.target.value)}
+                        placeholder="Search providers by name or category..."
                         className="flex-1 outline-none text-sm text-gray-800 placeholder-gray-400 bg-transparent"
                     />
+                    {searchTerm && (
+                        <button
+                            onClick={() => onSearchChange('')}
+                            className="text-gray-400 hover:text-gray-600 text-xs font-medium"
+                        >
+                            ✕
+                        </button>
+                    )}
                 </div>
 
                 <div className="flex-1" />
-
-                {/* Contact */}
-                <a href="tel:+911234567890" className="hidden lg:flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 transition-colors flex-shrink-0">
-                    <Phone className="w-4 h-4" />
-                    <span>+91 12345 67890</span>
-                </a>
 
                 {/* Avatar */}
                 <button

@@ -13,6 +13,9 @@ import { AlertCircle, RefreshCw } from 'lucide-react';
 function App() {
     const [selectedCategory, setSelectedCategory] = useState('all');
     const [selectedService, setSelectedService] = useState(null);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [activeSort, setActiveSort] = useState('default');
+
     const { userData } = useAuth();
     const { userLocation, loading: locationLoading, error: locationError, requestLocation } = useLocation();
     const { providers, loading: providersLoading, error: providersError } = useProviders(selectedCategory);
@@ -30,7 +33,15 @@ function App() {
             {/* ── Top Navbar ── */}
             <SearchBar
                 selectedCategory={selectedCategory}
-                onSelectCategory={setSelectedCategory}
+                onSelectCategory={(cat) => {
+                    setSelectedCategory(cat);
+                    setSelectedService(null);
+                }}
+                searchTerm={searchTerm}
+                onSearchChange={(val) => {
+                    setSearchTerm(val);
+                    setSelectedService(null);
+                }}
             />
 
             {/* ── Content Row ── */}
@@ -42,6 +53,9 @@ function App() {
                         services={sortedProviders}
                         onSelectService={setSelectedService}
                         selectedService={selectedService}
+                        searchTerm={searchTerm}
+                        activeSort={activeSort}
+                        onSortChange={setActiveSort}
                     />
                 </div>
 

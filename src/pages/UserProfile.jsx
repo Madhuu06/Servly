@@ -5,30 +5,29 @@ import { db, storage } from '../config/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import {
-    User, MapPin, LogOut, Phone, MessageCircle,
+    User, MapPin, LogOut, Mail,
     ChevronLeft, Edit2, Bell, Trash2,
-    HelpCircle, Shield, Info, ChevronRight, Camera
+    Shield, Info, ChevronRight, Camera,
+    CheckCircle, AlertCircle
 } from 'lucide-react';
 
 const UserProfile = () => {
-    const { user, userData, logout } = useAuth();
+    const { user, userData, logout, updateUserData } = useAuth();
     const navigate = useNavigate();
     const [isEditing, setIsEditing] = useState(false);
     const [profileImage, setProfileImage] = useState(userData?.photoURL || null);
     const [isSaving, setIsSaving] = useState(false);
     const [isUploadingImage, setIsUploadingImage] = useState(false);
+    const [saveStatus, setSaveStatus] = useState(null); // 'success' | 'error' | null
+    const [notificationsEnabled, setNotificationsEnabled] = useState(true);
     const fileInputRef = useRef(null);
     const [formData, setFormData] = useState({
         name: userData?.name || '',
-        email: userData?.email || '',
         area: userData?.area || ''
     });
 
-    // Load profile image from userData
     useEffect(() => {
-        if (userData?.photoURL) {
-            setProfileImage(userData.photoURL);
-        }
+        if (userData?.photoURL) setProfileImage(userData.photoURL);
     }, [userData]);
 
     const handleLogout = async () => {
@@ -38,18 +37,25 @@ const UserProfile = () => {
 
     const handleSave = async () => {
         if (!user?.uid) return;
+        if (!formData.name.trim()) {
+            setSaveStatus('error');
+            return;
+        }
 
         setIsSaving(true);
+        setSaveStatus(null);
         try {
             const userRef = doc(db, 'users', user.uid);
-            await updateDoc(userRef, {
-                name: formData.name,
-                area: formData.area
-            });
+            const updates = { name: formData.name.trim(), area: formData.area.trim() };
+            await updateDoc(userRef, updates);
+            // Update local context so the UI reflects changes immediately
+            updateUserData(updates);
             setIsEditing(false);
+            setSaveStatus('success');
+            setTimeout(() => setSaveStatus(null), 3000);
         } catch (error) {
             console.error('Error saving profile:', error);
-            alert('Failed to save profile. Please try again.');
+            setSaveStatus('error');
         } finally {
             setIsSaving(false);
         }
@@ -59,29 +65,48 @@ const UserProfile = () => {
         const file = e.target.files[0];
         if (!file || !user?.uid) return;
 
+        // Validate file type and size
+        if (!file.type.startsWith('image/')) {
+            alert('Please select a valid image file.');
+            return;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+            alert('Image must be smaller than 5MB.');
+            return;
+        }
+
         setIsUploadingImage(true);
         try {
-            // Create a storage reference
             const storageRef = ref(storage, `profile-pictures/${user.uid}`);
-
-            // Upload the file
             await uploadBytes(storageRef, file);
-
-            // Get the download URL
             const photoURL = await getDownloadURL(storageRef);
 
-            // Update Firestore with the new photo URL
             const userRef = doc(db, 'users', user.uid);
             await updateDoc(userRef, { photoURL });
-
-            // Update local state
+            updateUserData({ photoURL });
             setProfileImage(photoURL);
         } catch (error) {
             console.error('Error uploading image:', error);
-            alert('Failed to upload image. Please try again.');
+            alert('Failed to upload image. Make sure Firebase Storage is enabled.');
         } finally {
             setIsUploadingImage(false);
+            // Reset input so same file can be re-selected
+            if (fileInputRef.current) fileInputRef.current.value = '';
         }
+    };
+
+    const handleClearSavedServices = () => {
+        // Clear any locally stored favourites (future feature placeholder with feedback)
+        localStorage.removeItem('servly_saved_services');
+        alert('Saved services cleared.');
+    };
+
+    const handleChangeLocation = () => {
+        setIsEditing(true);
+        // Scroll into view to show the area field
+        setTimeout(() => {
+            document.getElementById('area-field')?.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
     };
 
     const getInitials = (name) => {
@@ -92,166 +117,173 @@ const UserProfile = () => {
     return (
         <div className="h-screen flex flex-col bg-gray-50 overflow-hidden">
             {/* Header */}
-            <header className="bg-white shadow-sm flex-shrink-0 z-10">
-                <div className="max-w-2xl mx-auto px-4 py-4 flex items-center gap-4">
+            <header className="bg-white border-b border-gray-100 flex-shrink-0">
+                <div className="max-w-2xl mx-auto px-4 py-4 flex items-center gap-3">
                     <button
                         onClick={() => navigate('/')}
                         className="p-2 hover:bg-gray-100 rounded-full transition"
                     >
-                        <ChevronLeft className="w-6 h-6 text-gray-700" />
+                        <ChevronLeft className="w-5 h-5 text-gray-700" />
                     </button>
-                    <h1 className="text-xl font-bold text-gray-900">My Profile</h1>
+                    <h1 className="text-lg font-bold text-gray-900">My Profile</h1>
+
+                    {/* Save status toast */}
+                    {saveStatus === 'success' && (
+                        <div className="ml-auto flex items-center gap-1.5 text-green-600 text-sm font-medium animate-fade-in">
+                            <CheckCircle className="w-4 h-4" />
+                            Saved!
+                        </div>
+                    )}
+                    {saveStatus === 'error' && (
+                        <div className="ml-auto flex items-center gap-1.5 text-red-500 text-sm font-medium">
+                            <AlertCircle className="w-4 h-4" />
+                            Failed to save
+                        </div>
+                    )}
                 </div>
             </header>
 
-            <main className="flex-1 overflow-y-auto">
-                <div className="max-w-2xl mx-auto px-4 py-6 space-y-6 pb-20">
-                    {/* Top Profile Section */}
+            <main className="flex-1 overflow-y-auto scrollbar-thin">
+                <div className="max-w-2xl mx-auto px-4 py-6 space-y-4 pb-8">
+
+                    {/* ── Profile Card ── */}
                     <div className="bg-white rounded-2xl shadow-sm p-6">
-                        <div className="flex flex-col items-center text-center mb-6">
-                            {/* Avatar with Upload */}
-                            <div className="relative mb-4">
+                        <div className="flex items-center gap-5">
+                            {/* Avatar */}
+                            <div className="relative flex-shrink-0">
                                 {profileImage ? (
                                     <img
                                         src={profileImage}
                                         alt="Profile"
-                                        className="w-24 h-24 rounded-full object-cover"
+                                        className="w-20 h-20 rounded-2xl object-cover"
                                     />
                                 ) : (
-                                    <div className="w-24 h-24 bg-[#2D2D2D] rounded-full flex items-center justify-center text-white text-3xl font-bold">
+                                    <div className="w-20 h-20 bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl flex items-center justify-center text-white text-2xl font-bold">
                                         {getInitials(userData?.name)}
                                     </div>
                                 )}
                                 <button
                                     onClick={() => fileInputRef.current?.click()}
                                     disabled={isUploadingImage}
-                                    className="absolute bottom-0 right-0 w-8 h-8 bg-[#2D2D2D] rounded-full flex items-center justify-center text-white hover:bg-black transition shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="absolute -bottom-1 -right-1 w-8 h-8 bg-blue-600 hover:bg-blue-700 rounded-full flex items-center justify-center text-white shadow-lg transition disabled:opacity-60"
+                                    title="Upload avatar"
                                 >
                                     {isUploadingImage ? (
-                                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                        <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                                     ) : (
-                                        <Camera className="w-4 h-4" />
+                                        <Camera className="w-3.5 h-3.5" />
                                     )}
                                 </button>
                                 <input
                                     ref={fileInputRef}
                                     type="file"
-                                    accept="image/*"
+                                    accept="image/jpeg,image/png,image/webp"
                                     onChange={handleImageUpload}
                                     className="hidden"
                                 />
                             </div>
 
-                            {/* Name */}
-                            <h2 className="text-2xl font-bold text-gray-900">
-                                {userData?.name || 'User'}
-                            </h2>
-
-                            {/* Email */}
-                            <p className="text-gray-500 mt-1">
-                                {userData?.email || user?.email || 'Not set'}
-                            </p>
-                        </div>
-
-                        {/* Stats Cards */}
-                        <div className="grid grid-cols-1 gap-4">
-                            <div className="bg-gray-100 rounded-xl p-4 text-center">
-                                <div className="flex items-center justify-center gap-1 mb-1">
-                                    <User className="w-5 h-5 text-gray-700" />
-                                    <span className="text-2xl font-bold text-gray-900">Customer</span>
-                                </div>
-                                <p className="text-sm text-gray-600">Account Type</p>
+                            <div className="flex-1 min-w-0">
+                                <h2 className="text-xl font-bold text-gray-900 truncate">
+                                    {userData?.name || 'User'}
+                                </h2>
+                                <p className="text-sm text-gray-500 mt-0.5 truncate">
+                                    {userData?.email || user?.email}
+                                </p>
+                                <span className="inline-block mt-2 text-xs font-semibold bg-blue-50 text-blue-700 px-2.5 py-1 rounded-lg capitalize">
+                                    {userData?.userType || 'Customer'}
+                                </span>
                             </div>
                         </div>
                     </div>
 
-                    {/* Personal Information */}
-                    <div className="bg-white rounded-2xl shadow-sm p-6">
+                    {/* ── Personal Information ── */}
+                    <div className="bg-white rounded-2xl shadow-sm p-5">
                         <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-lg font-semibold text-gray-900">Personal Information</h3>
+                            <h3 className="font-semibold text-gray-900">Personal Information</h3>
                             {!isEditing && (
                                 <button
                                     onClick={() => setIsEditing(true)}
-                                    className="text-gray-700 text-sm font-medium flex items-center gap-1 hover:text-gray-900"
+                                    className="flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:text-blue-700"
                                 >
-                                    <Edit2 className="w-4 h-4" />
+                                    <Edit2 className="w-3.5 h-3.5" />
                                     Edit
                                 </button>
                             )}
                         </div>
 
-                        <div className="space-y-4">
-                            {/* Full Name */}
+                        <div className="space-y-3">
+                            {/* Name */}
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
-                                    <User className="w-5 h-5 text-gray-600" />
+                                <div className="w-9 h-9 bg-gray-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                                    <User className="w-4 h-4 text-gray-500" />
                                 </div>
                                 <div className="flex-1">
-                                    <p className="text-xs text-gray-500 mb-1">Full Name</p>
+                                    <p className="text-xs text-gray-400 mb-0.5">Full Name</p>
                                     {isEditing ? (
                                         <input
                                             type="text"
                                             value={formData.name}
                                             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 outline-none"
+                                            className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-100 focus:border-blue-400 outline-none text-sm"
+                                            placeholder="Your full name"
                                         />
                                     ) : (
-                                        <p className="font-medium text-gray-900">{userData?.name || 'Not set'}</p>
+                                        <p className="text-sm font-medium text-gray-900">{userData?.name || 'Not set'}</p>
                                     )}
                                 </div>
                             </div>
 
-                            {/* Email */}
+                            {/* Email (read-only) */}
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
-                                    <Phone className="w-5 h-5 text-gray-600" />
+                                <div className="w-9 h-9 bg-gray-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                                    <Mail className="w-4 h-4 text-gray-500" />
                                 </div>
                                 <div className="flex-1">
-                                    <p className="text-xs text-gray-500 mb-1">Email Address</p>
-                                    <p className="font-medium text-gray-900">{userData?.email || user?.email || 'Not set'}</p>
+                                    <p className="text-xs text-gray-400 mb-0.5">Email Address</p>
+                                    <p className="text-sm font-medium text-gray-900">
+                                        {userData?.email || user?.email || 'Not set'}
+                                    </p>
                                 </div>
                             </div>
 
                             {/* Preferred Area */}
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
-                                    <MapPin className="w-5 h-5 text-gray-600" />
+                            <div className="flex items-center gap-3" id="area-field">
+                                <div className="w-9 h-9 bg-gray-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                                    <MapPin className="w-4 h-4 text-gray-500" />
                                 </div>
                                 <div className="flex-1">
-                                    <p className="text-xs text-gray-500 mb-1">Preferred Area / Locality</p>
+                                    <p className="text-xs text-gray-400 mb-0.5">Preferred Area</p>
                                     {isEditing ? (
                                         <input
                                             type="text"
                                             value={formData.area}
                                             onChange={(e) => setFormData({ ...formData, area: e.target.value })}
-                                            placeholder="e.g., Koramangala, Bangalore"
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 outline-none"
+                                            placeholder="e.g. Koramangala, Bangalore"
+                                            className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-100 focus:border-blue-400 outline-none text-sm"
                                         />
                                     ) : (
-                                        <p className="font-medium text-gray-900">{userData?.area || 'Not set'}</p>
+                                        <p className="text-sm font-medium text-gray-900">{userData?.area || 'Not set'}</p>
                                     )}
                                 </div>
                             </div>
 
+                            {/* Save/Cancel buttons */}
                             {isEditing && (
-                                <div className="flex gap-2 pt-2">
+                                <div className="flex gap-2 pt-1">
                                     <button
                                         onClick={handleSave}
                                         disabled={isSaving}
-                                        className="flex-1 px-4 py-2 bg-[#2D2D2D] text-white rounded-lg hover:bg-black transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition disabled:opacity-50"
                                     >
                                         {isSaving ? 'Saving...' : 'Save Changes'}
                                     </button>
                                     <button
                                         onClick={() => {
                                             setIsEditing(false);
-                                            setFormData({
-                                                name: userData?.name || '',
-                                                email: userData?.email || '',
-                                                area: userData?.area || ''
-                                            });
+                                            setFormData({ name: userData?.name || '', area: userData?.area || '' });
                                         }}
-                                        className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium"
+                                        className="px-4 py-2.5 bg-gray-100 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-200 transition"
                                     >
                                         Cancel
                                     </button>
@@ -260,87 +292,84 @@ const UserProfile = () => {
                         </div>
                     </div>
 
-                    {/* Settings */}
-                    <div className="bg-white rounded-2xl shadow-sm p-6">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Settings</h3>
-                        <div className="space-y-2">
-                            <button className="w-full flex items-center justify-between p-4 hover:bg-gray-50 rounded-xl transition">
-                                <div className="flex items-center gap-3">
-                                    <MapPin className="w-5 h-5 text-gray-500" />
-                                    <span className="font-medium text-gray-900">Change Default Location</span>
-                                </div>
-                                <ChevronRight className="w-5 h-5 text-gray-400" />
-                            </button>
-
-                            <div className="flex items-center justify-between p-4 hover:bg-gray-50 rounded-xl transition">
-                                <div className="flex items-center gap-3">
-                                    <Bell className="w-5 h-5 text-gray-500" />
-                                    <span className="font-medium text-gray-900">Notifications</span>
-                                </div>
-                                <label className="relative inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" className="sr-only peer" defaultChecked />
-                                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-gray-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2D2D2D]"></div>
-                                </label>
-                            </div>
-
-                            <button className="w-full flex items-center justify-between p-4 hover:bg-gray-50 rounded-xl transition text-gray-900">
-                                <div className="flex items-center gap-3">
-                                    <Trash2 className="w-5 h-5 text-gray-500" />
-                                    <span className="font-medium">Clear Saved Services</span>
-                                </div>
-                            </button>
-
+                    {/* ── Settings ── */}
+                    <div className="bg-white rounded-2xl shadow-sm p-5">
+                        <h3 className="font-semibold text-gray-900 mb-3">Settings</h3>
+                        <div className="space-y-1">
+                            {/* Change Default Location */}
                             <button
-                                onClick={handleLogout}
-                                className="w-full flex items-center justify-between p-4 hover:bg-gray-50 rounded-xl transition text-gray-900"
+                                onClick={handleChangeLocation}
+                                className="w-full flex items-center justify-between px-3 py-3 hover:bg-gray-50 rounded-xl transition group"
                             >
                                 <div className="flex items-center gap-3">
-                                    <LogOut className="w-5 h-5 text-gray-500" />
-                                    <span className="font-medium">Log Out</span>
+                                    <div className="w-9 h-9 bg-blue-50 rounded-xl flex items-center justify-center">
+                                        <MapPin className="w-4 h-4 text-blue-600" />
+                                    </div>
+                                    <div className="text-left">
+                                        <p className="text-sm font-medium text-gray-900">Change Default Location</p>
+                                        <p className="text-xs text-gray-400">{userData?.area || 'Not set'}</p>
+                                    </div>
                                 </div>
+                                <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-400" />
+                            </button>
+
+                            {/* Notifications Toggle */}
+                            <div className="flex items-center justify-between px-3 py-3 hover:bg-gray-50 rounded-xl transition">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-9 h-9 bg-purple-50 rounded-xl flex items-center justify-center">
+                                        <Bell className="w-4 h-4 text-purple-600" />
+                                    </div>
+                                    <p className="text-sm font-medium text-gray-900">Notifications</p>
+                                </div>
+                                <button
+                                    onClick={() => setNotificationsEnabled(prev => !prev)}
+                                    className={`relative w-11 h-6 rounded-full transition-colors ${notificationsEnabled ? 'bg-blue-600' : 'bg-gray-200'}`}
+                                >
+                                    <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${notificationsEnabled ? 'translate-x-5' : ''}`} />
+                                </button>
+                            </div>
+
+                            {/* Clear Saved Services */}
+                            <button
+                                onClick={handleClearSavedServices}
+                                className="w-full flex items-center gap-3 px-3 py-3 hover:bg-gray-50 rounded-xl transition"
+                            >
+                                <div className="w-9 h-9 bg-orange-50 rounded-xl flex items-center justify-center">
+                                    <Trash2 className="w-4 h-4 text-orange-500" />
+                                </div>
+                                <p className="text-sm font-medium text-gray-900">Clear Saved Services</p>
+                            </button>
+
+                            {/* Logout */}
+                            <button
+                                onClick={handleLogout}
+                                className="w-full flex items-center gap-3 px-3 py-3 hover:bg-red-50 rounded-xl transition group"
+                            >
+                                <div className="w-9 h-9 bg-red-50 group-hover:bg-red-100 rounded-xl flex items-center justify-center">
+                                    <LogOut className="w-4 h-4 text-red-500" />
+                                </div>
+                                <p className="text-sm font-medium text-red-500">Log Out</p>
                             </button>
                         </div>
                     </div>
 
-                    {/* Help & About */}
-                    <div className="bg-white rounded-2xl shadow-sm p-6">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Help & About</h3>
-                        <div className="space-y-2">
-                            <button className="w-full flex items-center justify-between p-4 hover:bg-gray-50 rounded-xl transition">
-                                <div className="flex items-center gap-3">
-                                    <HelpCircle className="w-5 h-5 text-gray-500" />
-                                    <span className="font-medium text-gray-900">How Servly Works</span>
-                                </div>
-                                <ChevronRight className="w-5 h-5 text-gray-400" />
-                            </button>
-
-                            <button className="w-full flex items-center justify-between p-4 hover:bg-gray-50 rounded-xl transition">
-                                <div className="flex items-center gap-3">
-                                    <MessageCircle className="w-5 h-5 text-gray-500" />
-                                    <span className="font-medium text-gray-900">Report an Issue</span>
-                                </div>
-                                <ChevronRight className="w-5 h-5 text-gray-400" />
-                            </button>
-
-                            <button className="w-full flex items-center justify-between p-4 hover:bg-gray-50 rounded-xl transition">
-                                <div className="flex items-center gap-3">
-                                    <Shield className="w-5 h-5 text-gray-500" />
-                                    <span className="font-medium text-gray-900">Privacy Policy</span>
-                                </div>
-                                <ChevronRight className="w-5 h-5 text-gray-400" />
-                            </button>
-
-                            <div className="p-4 text-center">
-                                <div className="flex items-center justify-center gap-2 text-gray-400">
-                                    <Info className="w-4 h-4" />
-                                    <span className="text-sm">Servly v1.0.0</span>
-                                </div>
-                            </div>
+                    {/* ── Privacy & App Info (compact) ── */}
+                    <div className="flex items-center justify-between px-2 pb-2">
+                        <button
+                            onClick={() => alert('Privacy Policy coming soon.')}
+                            className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600 transition"
+                        >
+                            <Shield className="w-3.5 h-3.5" />
+                            Privacy Policy
+                        </button>
+                        <div className="flex items-center gap-1.5 text-xs text-gray-300">
+                            <Info className="w-3.5 h-3.5" />
+                            Servly v1.0.0
                         </div>
                     </div>
                 </div>
-            </main >
-        </div >
+            </main>
+        </div>
     );
 };
 

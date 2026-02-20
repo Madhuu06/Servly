@@ -206,6 +206,11 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
+    // Allow pages to locally update userData after saving to Firestore
+    const updateUserData = (updates) => {
+        setUserData(prev => ({ ...prev, ...updates }));
+    };
+
     const value = {
         user,
         userData,
@@ -214,6 +219,7 @@ export const AuthProvider = ({ children }) => {
         login,
         logout,
         deleteAccount,
+        updateUserData,
         isAuthenticated: !!user,
         isProvider: userData?.userType === 'provider',
         isCustomer: userData?.userType === 'customer'
