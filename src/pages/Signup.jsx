@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { User, Mail, Lock, ArrowRight, Briefcase, MapPin, Navigation } from 'lucide-react';
+import { User, Mail, Lock, ArrowRight, Briefcase, MapPin, Navigation, Phone } from 'lucide-react';
 import { categories } from '../data/services';
 
 const Signup = () => {
@@ -13,6 +13,7 @@ const Signup = () => {
         password: '',
         confirmPassword: '',
         category: '',
+        phone: '',
         description: '',
         address: '',
         latitude: null,
@@ -140,6 +141,7 @@ const Signup = () => {
             userType: userType,
             ...(userType === 'provider' && {
                 category: formData.category,
+                phone: formData.phone,
                 description: formData.description,
                 address: formData.address,
                 latitude: formData.latitude,
@@ -375,6 +377,18 @@ const Signup = () => {
                                 </div>
 
                                 {/* Description */}
+                                <div className="relative">
+                                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                                    <input
+                                        type="tel"
+                                        name="phone"
+                                        value={formData.phone}
+                                        onChange={handleChange}
+                                        className="w-full pl-12 pr-4 py-4 bg-gray-50 border-0 rounded-2xl focus:ring-2 focus:ring-[#2D2D2D] outline-none transition text-gray-800 placeholder-gray-400"
+                                        placeholder="Phone Number (e.g. +91 98765 43210)"
+                                    />
+                                </div>
+
                                 <textarea
                                     name="description"
                                     value={formData.description}
