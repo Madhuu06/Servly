@@ -69,10 +69,6 @@ const Signup = () => {
                 setError('Please describe your services');
                 return false;
             }
-            if (!formData.address.trim()) {
-                setError('Please enter your business address');
-                return false;
-            }
             if (!formData.latitude || !formData.longitude) {
                 setError('Please capture your location');
                 return false;
@@ -92,11 +88,24 @@ const Signup = () => {
         }
 
         navigator.geolocation.getCurrentPosition(
-            (position) => {
+            async (position) => {
+                const { latitude, longitude } = position.coords;
+
+                // Auto reverse-geocode to get readable address
+                let address = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+                try {
+                    const res = await fetch(
+                        `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`
+                    );
+                    const data = await res.json();
+                    if (data.display_name) address = data.display_name;
+                } catch (_) { /* use fallback address */ }
+
                 setFormData(prev => ({
                     ...prev,
-                    latitude: position.coords.latitude,
-                    longitude: position.coords.longitude
+                    latitude,
+                    longitude,
+                    address,
                 }));
                 setIsGettingLocation(false);
             },
@@ -105,11 +114,7 @@ const Signup = () => {
                 setError('Unable to get your location. Please enable location services.');
                 setIsGettingLocation(false);
             },
-            {
-                enableHighAccuracy: true,
-                timeout: 10000,
-                maximumAge: 0
-            }
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
         );
     };
 
@@ -378,19 +383,6 @@ const Signup = () => {
                                     className="w-full px-4 py-4 bg-gray-50 border-0 rounded-2xl focus:ring-2 focus:ring-[#2D2D2D] outline-none transition text-gray-800 placeholder-gray-400 resize-none"
                                     placeholder="Describe your services..."
                                 />
-
-                                {/* Address */}
-                                <div className="relative">
-                                    <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                                    <input
-                                        type="text"
-                                        name="address"
-                                        value={formData.address}
-                                        onChange={handleChange}
-                                        className="w-full pl-12 pr-4 py-4 bg-gray-50 border-0 rounded-2xl focus:ring-2 focus:ring-[#2D2D2D] outline-none transition text-gray-800 placeholder-gray-400"
-                                        placeholder="Business Address"
-                                    />
-                                </div>
 
                                 {/* Location Capture */}
                                 <div className="space-y-3">
