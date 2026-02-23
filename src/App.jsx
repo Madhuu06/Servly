@@ -78,6 +78,13 @@ function App() {
                 </button>
             </div>
 
+            {/* ── Floating logo ── */}
+            <div className="absolute top-4 left-4 z-[500]">
+                <div className="w-10 h-10 bg-white rounded-full shadow-lg flex items-center justify-center overflow-hidden">
+                    <img src="/logo.png" alt="Servly" className="w-7 h-7 object-contain" />
+                </div>
+            </div>
+
             {/* ── Floating provider list ── */}
             <div className="absolute top-[110px] left-4 bottom-4 w-[260px] z-[400]">
                 <ProviderList
@@ -149,8 +156,8 @@ function CategoryChips({ selectedCategory, onSelectCategory }) {
             key={cat.id}
             onClick={() => onSelectCategory(cat.id)}
             className={`px-3 py-1.5 rounded-full text-xs whitespace-nowrap font-medium shadow transition-all ${selectedCategory === cat.id
-                    ? 'bg-gray-900 text-white shadow-md'
-                    : 'bg-white text-gray-600 hover:bg-gray-50'
+                ? 'bg-gray-900 text-white shadow-md'
+                : 'bg-white text-gray-600 hover:bg-gray-50'
                 }`}
         >
             {cat.label}
