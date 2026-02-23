@@ -8,67 +8,60 @@ const SearchBar = ({ selectedCategory, onSelectCategory, searchTerm, onSearchCha
     const { userData } = useAuth();
 
     return (
-        <div className="flex-shrink-0 z-[1000]">
+        <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
 
-            {/* ── Dark top bar ── */}
-            <div className="flex items-center gap-4 px-5 py-3" style={{ backgroundColor: '#111827' }}>
+            {/* Top row: logo + search + profile */}
+            <div className="flex items-center gap-3 px-4 py-3">
 
                 {/* Logo */}
-                <span className="text-white font-bold text-lg tracking-tight flex-shrink-0 w-40">
+                <span className="text-gray-900 font-bold text-lg tracking-tight flex-shrink-0">
                     Servly
                 </span>
 
-                {/* Centered search */}
-                <div className="flex-1 flex items-center gap-2.5 bg-white/10 hover:bg-white/15 border border-white/10 rounded-full px-4 py-2 transition max-w-2xl mx-auto">
-                    <Search className="w-4 h-4 text-white/50 flex-shrink-0" />
+                {/* Search */}
+                <div className="flex-1 flex items-center gap-2 bg-gray-100 rounded-full px-3.5 py-2 max-w-lg mx-auto">
+                    <Search className="w-4 h-4 text-gray-400 flex-shrink-0" />
                     <input
                         type="text"
                         value={searchTerm}
                         onChange={e => onSearchChange(e.target.value)}
                         placeholder="Search services..."
-                        className="flex-1 bg-transparent outline-none text-sm text-white placeholder-white/40"
+                        className="flex-1 bg-transparent outline-none text-sm text-gray-800 placeholder-gray-400"
                     />
                     {searchTerm && (
-                        <button
-                            onClick={() => onSearchChange('')}
-                            className="text-white/40 hover:text-white/70 text-xs transition"
-                        >✕</button>
+                        <button onClick={() => onSearchChange('')}
+                            className="text-gray-400 hover:text-gray-600 text-xs transition">✕</button>
                     )}
                 </div>
 
                 {/* Profile */}
-                <div className="w-40 flex justify-end">
-                    <button
-                        onClick={() => navigate('/profile')}
-                        title={userData?.name || 'Profile'}
-                        className="w-8 h-8 flex items-center justify-center rounded-full overflow-hidden transition hover:opacity-80"
-                    >
-                        {userData?.photoURL ? (
-                            <img src={userData.photoURL} alt="" className="w-8 h-8 object-cover rounded-full" />
-                        ) : (
-                            <User className="w-5 h-5 text-white/60" />
-                        )}
-                    </button>
-                </div>
+                <button
+                    onClick={() => navigate('/profile')}
+                    title={userData?.name || 'Profile'}
+                    className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0 border border-gray-200 hover:border-gray-300 transition"
+                >
+                    {userData?.photoURL ? (
+                        <img src={userData.photoURL} alt="" className="w-8 h-8 object-cover" />
+                    ) : (
+                        <User className="w-4 h-4 text-gray-400" />
+                    )}
+                </button>
             </div>
 
-            {/* ── Category chips row ── */}
-            <div className="flex items-center gap-1 px-5 py-2.5 bg-white border-b border-gray-100 overflow-x-auto scrollbar-hide">
-                {categories.map(cat => {
-                    const isSelected = selectedCategory === cat.id;
-                    return (
-                        <button
-                            key={cat.id}
-                            onClick={() => onSelectCategory(cat.id)}
-                            className={`px-3.5 py-1 rounded-full text-sm whitespace-nowrap flex-shrink-0 transition-all font-medium ${isSelected
-                                    ? 'bg-gray-900 text-white'
-                                    : 'text-gray-500 hover:text-gray-900'
-                                }`}
-                        >
-                            {cat.label}
-                        </button>
-                    );
-                })}
+            {/* Category chips */}
+            <div className="flex items-center gap-1 px-4 pb-3 overflow-x-auto scrollbar-hide">
+                {categories.map(cat => (
+                    <button
+                        key={cat.id}
+                        onClick={() => onSelectCategory(cat.id)}
+                        className={`px-3 py-1 rounded-full text-xs whitespace-nowrap flex-shrink-0 transition-all font-medium ${selectedCategory === cat.id
+                                ? 'bg-gray-900 text-white'
+                                : 'text-gray-500 hover:text-gray-800 hover:bg-gray-100'
+                            }`}
+                    >
+                        {cat.label}
+                    </button>
+                ))}
             </div>
         </div>
     );
