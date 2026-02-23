@@ -3,39 +3,55 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { useEffect } from 'react';
 
-// Fix for default marker icon in React Leaflet
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-    iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-    iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+// Build a black circle marker with the provider's initial
+const createProviderIcon = (name, isSelected = false) => {
+    const initial = (name?.[0] || '?').toUpperCase();
+    const bg = isSelected ? '#FF8A00' : '#111827';
+    return L.divIcon({
+        html: `<div style="
+            width:32px;height:32px;
+            background:${bg};
+            border-radius:50%;
+            display:flex;align-items:center;justify-content:center;
+            color:#fff;font-size:12px;font-weight:700;
+            font-family:Inter,-apple-system,sans-serif;
+            border:2px solid #fff;
+            box-shadow:0 2px 8px rgba(0,0,0,0.25);
+            cursor:pointer;
+        ">${initial}</div>`,
+        className: '',
+        iconSize: [32, 32],
+        iconAnchor: [16, 16],
+        popupAnchor: [0, -18],
+    });
+};
+
+// Blue pulsing dot for user location
+const userLocationIcon = L.divIcon({
+    html: `<div style="
+        width:16px;height:16px;
+        background:#3B82F6;
+        border-radius:50%;
+        border:3px solid #fff;
+        box-shadow:0 0 0 3px rgba(59,130,246,0.3);
+    "></div>`,
+    className: '',
+    iconSize: [16, 16],
+    iconAnchor: [8, 8],
 });
 
-// Custom icon for user location
-const userLocationIcon = new L.Icon({
-    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
-    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-    shadowSize: [41, 41]
-});
-
-// Component to update map center when user location changes
 function MapUpdater({ userLocation }) {
     const map = useMap();
-
     useEffect(() => {
         if (userLocation) {
             map.setView([userLocation.latitude, userLocation.longitude], 14);
         }
     }, [userLocation, map]);
-
     return null;
 }
 
-const MapBackground = ({ providers = [], onMarkerClick, userLocation }) => {
-    const defaultPosition = [12.9716, 77.5946]; // Default Center (Bangalore)
+const MapBackground = ({ providers = [], onMarkerClick, userLocation, selectedService }) => {
+    const defaultPosition = [12.9716, 77.5946];
     const mapCenter = userLocation
         ? [userLocation.latitude, userLocation.longitude]
         : defaultPosition;
@@ -45,44 +61,49 @@ const MapBackground = ({ providers = [], onMarkerClick, userLocation }) => {
             center={mapCenter}
             zoom={14}
             scrollWheelZoom={true}
-            style={{ height: "100%", width: "100%", zIndex: 0 }}
+            style={{ height: '100%', width: '100%', zIndex: 0 }}
             zoomControl={false}
         >
+            {/* Light clean tile style */}
             <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>'
                 url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
             />
 
             <MapUpdater userLocation={userLocation} />
 
-            {/* User Location Marker */}
+            {/* User location */}
             {userLocation && (
                 <Marker
                     position={[userLocation.latitude, userLocation.longitude]}
                     icon={userLocationIcon}
                 >
-                    <Popup>Your Location</Popup>
+                    <Popup>Your location</Popup>
                 </Marker>
             )}
 
-            {/* Provider Markers */}
-            {providers.map((service) => (
-                <Marker
-                    key={service.id || service.uid}
-                    position={[service.latitude, service.longitude]}
-                    eventHandlers={{
-                        click: () => onMarkerClick(service),
-                    }}
-                >
-                    <Popup>
-                        <div className="text-sm">
-                            <strong>{service.name}</strong><br />
-                            {service.category}<br />
-                            {service.distanceText && `${service.distanceText} away`}
-                        </div>
-                    </Popup>
-                </Marker>
-            ))}
+            {/* Provider markers */}
+            {providers.map(service => {
+                const isSelected =
+                    selectedService?.uid === service.uid ||
+                    selectedService?.id === service.id;
+                return (
+                    <Marker
+                        key={service.id || service.uid}
+                        position={[service.latitude, service.longitude]}
+                        icon={createProviderIcon(service.name, isSelected)}
+                        eventHandlers={{ click: () => onMarkerClick(service) }}
+                    >
+                        <Popup>
+                            <div className="text-sm">
+                                <strong>{service.name}</strong><br />
+                                {service.category}<br />
+                                {service.distanceText && `${service.distanceText} away`}
+                            </div>
+                        </Popup>
+                    </Marker>
+                );
+            })}
         </MapContainer>
     );
 };

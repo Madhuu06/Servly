@@ -48,7 +48,7 @@ function App() {
             <div className="flex flex-1 overflow-hidden">
 
                 {/* Left sidebar */}
-                <div className="w-[380px] xl:w-[420px] flex-shrink-0 h-full bg-white border-r border-gray-100 overflow-hidden flex flex-col shadow-sm">
+                <div className="w-[280px] flex-shrink-0 h-full bg-white border-r border-gray-100 overflow-hidden flex flex-col">
                     <ProviderList
                         services={sortedProviders}
                         onSelectService={setSelectedService}
@@ -106,6 +106,7 @@ function App() {
                         onMarkerClick={setSelectedService}
                         filteredCategory={selectedCategory}
                         userLocation={userLocation}
+                        selectedService={selectedService}
                     />
                 </div>
             </div>
