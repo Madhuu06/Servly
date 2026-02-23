@@ -1,66 +1,47 @@
-export const services = [
-    {
-        id: 1,
-        name: "Rajesh Electric Works",
-        category: "Electrician",
-        latitude: 12.9716,
-        longitude: 77.5946,
-        rating: 4.8,
-        distance: "0.8 km",
-        phone: "+91 98765 43210",
-        description: "Expert in home wiring and appliance repair."
-    },
-    {
-        id: 2,
-        name: "Speedy Plumbers",
-        category: "Plumber",
-        latitude: 12.9750,
-        longitude: 77.6000,
-        rating: 4.5,
-        distance: "1.2 km",
-        phone: "+91 98765 43211",
-        description: "Leakages, pipe fitting, and water tank cleaning."
-    },
-    {
-        id: 3,
-        name: "City Mechanics",
-        category: "Mechanic",
-        latitude: 12.9680,
-        longitude: 77.5900,
-        rating: 4.2,
-        distance: "1.5 km",
-        phone: "+91 98765 43212",
-        description: "Two-wheeler and four-wheeler breakdown assistance."
-    },
-    {
-        id: 4,
-        name: "CleanHome Services",
-        category: "Cleaning",
-        latitude: 12.9780,
-        longitude: 77.5920,
-        rating: 4.9,
-        distance: "0.5 km",
-        phone: "+91 98765 43213",
-        description: "Deep cleaning for homes and offices."
-    },
-    {
-        id: 5,
-        name: "CoolAir AC Repair",
-        category: "AC Repair",
-        latitude: 12.9650,
-        longitude: 77.6050,
-        rating: 4.6,
-        distance: "2.1 km",
-        phone: "+91 98765 43214",
-        description: "Installation, service, and gas filling."
-    }
-];
+// ── Service categories available on Servly ──
+// Grouped by domain for readability; the app uses the flat `categories` array.
 
 export const categories = [
-    { id: 'all', label: 'All', icon: 'LayoutGrid' },
-    { id: 'Electrician', label: 'Electrician', icon: 'Zap' },
-    { id: 'Plumber', label: 'Plumber', icon: 'Droplets' },
-    { id: 'Mechanic', label: 'Mechanic', icon: 'Wrench' },
-    { id: 'Cleaning', label: 'Cleaning', icon: 'Sparkles' },
-    { id: 'AC Repair', label: 'AC Repair', icon: 'Wind' },
+    // Home Repair & Maintenance
+    { id: 'Electrician', label: 'Electrician' },
+    { id: 'Plumber', label: 'Plumber' },
+    { id: 'Carpenter', label: 'Carpenter' },
+    { id: 'Painter', label: 'Painter' },
+    { id: 'Appliance Repair', label: 'Appliance Repair' },
+    { id: 'AC Service & Installation', label: 'AC Service & Installation' },
+    { id: 'Pest Control', label: 'Pest Control' },
+    { id: 'Handyman', label: 'Handyman' },
+
+    // Cleaning
+    { id: 'Home Cleaning', label: 'Home Cleaning' },
+    { id: 'Deep Cleaning', label: 'Deep Cleaning' },
+    { id: 'Window / Glass Cleaning', label: 'Window / Glass Cleaning' },
+    { id: 'Upholstery Cleaning', label: 'Upholstery Cleaning' },
+    { id: 'Water Tank Cleaning', label: 'Water Tank Cleaning' },
+
+    // Vehicle
+    { id: 'Car Repair', label: 'Car Repair' },
+    { id: 'Bike Repair', label: 'Bike Repair' },
+    { id: 'Car Wash / Detailing', label: 'Car Wash / Detailing' },
+    { id: 'Mobile Mechanic', label: 'Mobile Mechanic' },
+
+    // Personal / Lifestyle
+    { id: 'Tailoring / Stitching', label: 'Tailoring / Stitching' },
+    { id: 'Laundry & Dry Clean', label: 'Laundry & Dry Clean' },
+    { id: 'Beauty & Grooming', label: 'Beauty & Grooming' },
+    { id: 'Massage at Home', label: 'Massage at Home' },
+
+    // Education & Wellness
+    { id: 'Tutors', label: 'Tutors' },
+    { id: 'Fitness Trainer', label: 'Fitness Trainer' },
+    { id: 'Pet Care', label: 'Pet Care' },
+    { id: 'Errand Running', label: 'Errand Running' },
+
+    // Health & Care
+    { id: 'Home Nursing', label: 'Home Nursing' },
+    { id: 'Elderly Care', label: 'Elderly Care' },
+    { id: 'Childcare', label: 'Childcare' },
 ];
+
+// Legacy sample data (kept for reference, providers come from Firestore)
+export const services = [];

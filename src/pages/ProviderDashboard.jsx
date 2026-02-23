@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { doc, updateDoc, setDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
+import { categories } from '../data/services';
 import { useReviews } from '../hooks/useReviews';
 import {
     User, LogOut, Star, Phone, MapPin, Bell,
@@ -148,8 +149,13 @@ export default function ProviderDashboard() {
                         </Field>
                         <Field label="Category" icon={MapPin}>
                             {isEditing
-                                ? <input value={profileData.category} onChange={e => setProfileData(p => ({ ...p, category: e.target.value }))}
-                                    className="w-full px-3 py-2 border border-gray-200 rounded-lg outline-none text-sm focus:border-gray-400" />
+                                ? <select value={profileData.category} onChange={e => setProfileData(p => ({ ...p, category: e.target.value }))}
+                                    className="w-full px-3 py-2 border border-gray-200 rounded-lg outline-none text-sm focus:border-gray-400 bg-white">
+                                    <option value="">Select a service</option>
+                                    {categories.map(c => (
+                                        <option key={c.id} value={c.id}>{c.label}</option>
+                                    ))}
+                                </select>
                                 : <p className="text-sm text-gray-800">{profileData.category || 'Not set'}</p>
                             }
                         </Field>
