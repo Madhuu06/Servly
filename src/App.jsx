@@ -39,19 +39,24 @@ function App() {
                 selectedService={selectedService}
             />
 
-            {/* ── Floating search bubble ── */}
-            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[500] w-full max-w-md px-4">
-                <SearchBar
-                    searchTerm={searchTerm}
-                    onSearchChange={(val) => {
-                        setSearchTerm(val);
-                        setSelectedService(null);
-                    }}
-                />
+            {/* ── Logo + Search bar (left-aligned, same width as list) ── */}
+            <div className="absolute top-4 left-4 z-[500] w-[260px] flex items-center gap-2">
+                <div className="w-10 h-10 bg-white rounded-full shadow-lg flex items-center justify-center overflow-hidden flex-shrink-0">
+                    <img src="/logo.png" alt="Servly" className="w-7 h-7 object-contain" />
+                </div>
+                <div className="flex-1">
+                    <SearchBar
+                        searchTerm={searchTerm}
+                        onSearchChange={(val) => {
+                            setSearchTerm(val);
+                            setSelectedService(null);
+                        }}
+                    />
+                </div>
             </div>
 
             {/* ── Floating category chips ── */}
-            <div className="absolute top-[72px] left-4 z-[500]">
+            <div className="absolute top-[68px] left-4 z-[500] w-[260px]">
                 <div className="flex items-center gap-1.5 flex-wrap">
                     <CategoryChips
                         selectedCategory={selectedCategory}
@@ -76,13 +81,6 @@ function App() {
                         <User className="w-5 h-5 text-gray-400" />
                     )}
                 </button>
-            </div>
-
-            {/* ── Floating logo ── */}
-            <div className="absolute top-4 left-4 z-[500]">
-                <div className="w-10 h-10 bg-white rounded-full shadow-lg flex items-center justify-center overflow-hidden">
-                    <img src="/logo.png" alt="Servly" className="w-7 h-7 object-contain" />
-                </div>
             </div>
 
             {/* ── Floating provider list ── */}
