@@ -40,7 +40,7 @@ function App() {
             />
 
             {/* ── Logo + Search bar (left-aligned, same width as list) ── */}
-            <div className="absolute top-4 left-4 z-[500] w-[260px] flex items-center gap-2">
+            <div className="absolute top-4 left-4 z-[500] w-[320px] flex items-center gap-2">
                 <div className="w-10 h-10 bg-white rounded-full shadow-lg flex items-center justify-center overflow-hidden flex-shrink-0">
                     <img src="/logo.png" alt="Servly" className="w-7 h-7 object-contain" />
                 </div>
@@ -49,19 +49,6 @@ function App() {
                         searchTerm={searchTerm}
                         onSearchChange={(val) => {
                             setSearchTerm(val);
-                            setSelectedService(null);
-                        }}
-                    />
-                </div>
-            </div>
-
-            {/* ── Floating category chips ── */}
-            <div className="absolute top-[68px] left-4 z-[500] w-[260px]">
-                <div className="flex items-center gap-1.5 flex-wrap">
-                    <CategoryChips
-                        selectedCategory={selectedCategory}
-                        onSelectCategory={(cat) => {
-                            setSelectedCategory(cat);
                             setSelectedService(null);
                         }}
                     />
@@ -84,7 +71,7 @@ function App() {
             </div>
 
             {/* ── Floating provider list ── */}
-            <div className="absolute top-[110px] left-4 bottom-4 w-[260px] z-[400]">
+            <div className="absolute top-[68px] left-4 bottom-4 w-[320px] z-[400]">
                 <ProviderList
                     services={sortedProviders}
                     onSelectService={setSelectedService}
