@@ -1,9 +1,9 @@
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
-// Build a black circle marker with the provider's initial
+// Build a dark circle marker with the provider's initial
 const createProviderIcon = (name, isSelected = false) => {
     const initial = (name?.[0] || '?').toUpperCase();
     const bg = isSelected ? '#FF8A00' : '#111827';
@@ -26,7 +26,7 @@ const createProviderIcon = (name, isSelected = false) => {
     });
 };
 
-// Blue pulsing dot for user location
+// Blue dot for user location
 const userLocationIcon = L.divIcon({
     html: `<div style="
         width:16px;height:16px;
@@ -40,6 +40,9 @@ const userLocationIcon = L.divIcon({
     iconAnchor: [8, 8],
 });
 
+// Min zoom to show provider markers (hides when zoomed out further)
+const MIN_MARKER_ZOOM = 12;
+
 function MapUpdater({ userLocation }) {
     const map = useMap();
     useEffect(() => {
@@ -50,11 +53,25 @@ function MapUpdater({ userLocation }) {
     return null;
 }
 
+// Track zoom level to show/hide markers
+function ZoomTracker({ onZoomChange }) {
+    const map = useMapEvents({
+        zoomend: () => onZoomChange(map.getZoom()),
+    });
+    useEffect(() => {
+        onZoomChange(map.getZoom());
+    }, []);
+    return null;
+}
+
 const MapBackground = ({ providers = [], onMarkerClick, userLocation, selectedService }) => {
     const defaultPosition = [12.9716, 77.5946];
     const mapCenter = userLocation
         ? [userLocation.latitude, userLocation.longitude]
         : defaultPosition;
+
+    const [zoom, setZoom] = useState(14);
+    const showMarkers = zoom >= MIN_MARKER_ZOOM;
 
     return (
         <MapContainer
@@ -63,14 +80,15 @@ const MapBackground = ({ providers = [], onMarkerClick, userLocation, selectedSe
             scrollWheelZoom={true}
             style={{ height: '100%', width: '100%', zIndex: 0 }}
             zoomControl={false}
+            attributionControl={false}
         >
-            {/* Light clean tile style */}
             <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>'
                 url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+                attribution=""
             />
 
             <MapUpdater userLocation={userLocation} />
+            <ZoomTracker onZoomChange={setZoom} />
 
             {/* User location */}
             {userLocation && (
@@ -82,8 +100,8 @@ const MapBackground = ({ providers = [], onMarkerClick, userLocation, selectedSe
                 </Marker>
             )}
 
-            {/* Provider markers */}
-            {providers.map(service => {
+            {/* Provider markers — only visible when zoomed in enough */}
+            {showMarkers && providers.map(service => {
                 const isSelected =
                     selectedService?.uid === service.uid ||
                     selectedService?.id === service.id;

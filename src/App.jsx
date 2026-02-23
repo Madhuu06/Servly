@@ -8,7 +8,7 @@ import MapBackground from './components/MapBackground';
 import SearchBar from './components/SearchBar';
 import ServiceBottomSheet from './components/ServiceBottomSheet';
 import ProviderList from './components/ProviderList';
-import { AlertCircle, RefreshCw, Navigation } from 'lucide-react';
+import { AlertCircle, RefreshCw, Navigation, User } from 'lucide-react';
 
 function App() {
     const [selectedCategory, setSelectedCategory] = useState('all');
@@ -16,6 +16,7 @@ function App() {
     const [searchTerm, setSearchTerm] = useState('');
 
     const { userData } = useAuth();
+    const navigate = useNavigate();
     const { userLocation, loading: locationLoading, error: locationError, requestLocation } = useLocation();
     const { providers, loading: providersLoading, error: providersError } = useProviders(selectedCategory);
 
@@ -38,14 +39,9 @@ function App() {
                 selectedService={selectedService}
             />
 
-            {/* ── Floating search bar ── */}
-            <div className="absolute top-4 left-4 right-4 z-[500]">
+            {/* ── Floating search bubble ── */}
+            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[500] w-full max-w-md px-4">
                 <SearchBar
-                    selectedCategory={selectedCategory}
-                    onSelectCategory={(cat) => {
-                        setSelectedCategory(cat);
-                        setSelectedService(null);
-                    }}
                     searchTerm={searchTerm}
                     onSearchChange={(val) => {
                         setSearchTerm(val);
@@ -54,8 +50,36 @@ function App() {
                 />
             </div>
 
+            {/* ── Floating category chips ── */}
+            <div className="absolute top-[72px] left-4 z-[500]">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                    <CategoryChips
+                        selectedCategory={selectedCategory}
+                        onSelectCategory={(cat) => {
+                            setSelectedCategory(cat);
+                            setSelectedService(null);
+                        }}
+                    />
+                </div>
+            </div>
+
+            {/* ── Floating profile bubble ── */}
+            <div className="absolute top-4 right-4 z-[500]">
+                <button
+                    onClick={() => navigate('/profile')}
+                    title={userData?.name || 'Profile'}
+                    className="w-10 h-10 rounded-full bg-white shadow-lg flex items-center justify-center overflow-hidden hover:shadow-xl transition"
+                >
+                    {userData?.photoURL ? (
+                        <img src={userData.photoURL} alt="" className="w-10 h-10 object-cover" />
+                    ) : (
+                        <User className="w-5 h-5 text-gray-400" />
+                    )}
+                </button>
+            </div>
+
             {/* ── Floating provider list ── */}
-            <div className="absolute top-[120px] left-4 bottom-4 w-[280px] z-[400]">
+            <div className="absolute top-[110px] left-4 bottom-4 w-[260px] z-[400]">
                 <ProviderList
                     services={sortedProviders}
                     onSelectService={setSelectedService}
@@ -64,25 +88,25 @@ function App() {
                 />
             </div>
 
-            {/* ── Loading overlay ── */}
+            {/* ── Loading pill ── */}
             {isLoading && (
-                <div className="absolute top-[130px] left-1/2 -translate-x-1/2 z-[600] bg-white rounded-2xl shadow-lg px-6 py-4 flex items-center gap-3">
-                    <div className="w-5 h-5 border-2 border-gray-800 border-t-transparent rounded-full animate-spin" />
-                    <p className="text-sm font-medium text-gray-600">Finding providers...</p>
+                <div className="absolute top-[72px] left-1/2 -translate-x-1/2 z-[600] bg-white rounded-full shadow-lg px-5 py-2.5 flex items-center gap-2.5">
+                    <div className="w-4 h-4 border-2 border-gray-800 border-t-transparent rounded-full animate-spin" />
+                    <p className="text-xs font-medium text-gray-600">Finding providers…</p>
                 </div>
             )}
 
             {/* ── Location error ── */}
             {locationError && !isLoading && (
-                <div className="absolute top-[130px] left-1/2 -translate-x-1/2 z-[600] bg-white border border-yellow-200 rounded-2xl shadow-lg p-4 w-80">
-                    <div className="flex items-start gap-3">
-                        <AlertCircle className="w-5 h-5 text-yellow-500 flex-shrink-0 mt-0.5" />
+                <div className="absolute top-[72px] left-1/2 -translate-x-1/2 z-[600] bg-white border border-yellow-200 rounded-2xl shadow-lg p-3 w-72">
+                    <div className="flex items-start gap-2">
+                        <AlertCircle className="w-4 h-4 text-yellow-500 flex-shrink-0 mt-0.5" />
                         <div>
-                            <p className="text-sm font-semibold text-gray-800">Location needed</p>
-                            <p className="text-xs text-gray-500 mt-0.5">{locationError}</p>
+                            <p className="text-xs font-semibold text-gray-700">Location needed</p>
+                            <p className="text-[11px] text-gray-500 mt-0.5">{locationError}</p>
                             <button onClick={requestLocation}
-                                className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700">
-                                <RefreshCw className="w-3 h-3" /> Enable Location
+                                className="mt-1.5 flex items-center gap-1 text-[11px] font-semibold text-blue-600 hover:text-blue-700">
+                                <RefreshCw className="w-3 h-3" /> Enable
                             </button>
                         </div>
                     </div>
@@ -91,8 +115,8 @@ function App() {
 
             {/* ── Providers error ── */}
             {providersError && (
-                <div className="absolute top-[130px] left-1/2 -translate-x-1/2 z-[600] bg-white border border-red-200 rounded-2xl shadow-lg p-4">
-                    <p className="text-sm text-red-700 font-medium">{providersError}</p>
+                <div className="absolute top-[72px] left-1/2 -translate-x-1/2 z-[600] bg-white border border-red-200 rounded-xl shadow-lg px-4 py-3">
+                    <p className="text-xs text-red-700 font-medium">{providersError}</p>
                 </div>
             )}
 
@@ -114,6 +138,24 @@ function App() {
             )}
         </div>
     );
+}
+
+/* ── Category chips — imported from data ── */
+import { categories } from './data/services';
+
+function CategoryChips({ selectedCategory, onSelectCategory }) {
+    return categories.map(cat => (
+        <button
+            key={cat.id}
+            onClick={() => onSelectCategory(cat.id)}
+            className={`px-3 py-1.5 rounded-full text-xs whitespace-nowrap font-medium shadow transition-all ${selectedCategory === cat.id
+                    ? 'bg-gray-900 text-white shadow-md'
+                    : 'bg-white text-gray-600 hover:bg-gray-50'
+                }`}
+        >
+            {cat.label}
+        </button>
+    ));
 }
 
 export default App;

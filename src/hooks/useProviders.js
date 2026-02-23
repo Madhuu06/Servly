@@ -14,29 +14,29 @@ export function useProviders(category = 'all') {
 
     useEffect(() => {
         try {
-            // Build query
-            let q;
-            if (category === 'all') {
-                q = query(
-                    collection(db, 'providers'),
-                    orderBy('rating', 'desc')
-                );
-            } else {
-                q = query(
-                    collection(db, 'providers'),
-                    where('category', '==', category),
-                    orderBy('rating', 'desc')
-                );
-            }
+            // Always fetch all providers — filter on client side
+            // This avoids Firestore composite index issues and handles case-insensitive matching
+            const q = query(
+                collection(db, 'providers'),
+                orderBy('rating', 'desc')
+            );
 
-            // Subscribe to real-time updates
             const unsubscribe = onSnapshot(
                 q,
                 (snapshot) => {
-                    const providersData = snapshot.docs.map(doc => ({
+                    let providersData = snapshot.docs.map(doc => ({
                         id: doc.id,
                         ...doc.data()
                     }));
+
+                    // Client-side category filter (case-insensitive)
+                    if (category !== 'all') {
+                        const catLower = category.toLowerCase();
+                        providersData = providersData.filter(p =>
+                            p.category?.toLowerCase() === catLower
+                        );
+                    }
+
                     setProviders(providersData);
                     setLoading(false);
                     setError(null);
@@ -48,7 +48,6 @@ export function useProviders(category = 'all') {
                 }
             );
 
-            // Cleanup subscription
             return () => unsubscribe();
         } catch (err) {
             console.error('Error setting up providers listener:', err);
