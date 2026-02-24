@@ -28,18 +28,26 @@ export const AuthProvider = ({ children }) => {
     // Listen for auth state changes
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-            if (firebaseUser) {
-                setUser(firebaseUser);
-                // Fetch additional user data from Firestore
-                try {
+            try {
+                if (firebaseUser) {
+                    // Fetch additional user data from Firestore
                     const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
                     if (userDoc.exists()) {
+                        setUser(firebaseUser);
                         setUserData(userDoc.data());
+                    } else {
+                        // User doc missing → account was deleted, sign out the orphan auth session
+                        console.warn('User doc missing for', firebaseUser.uid, '— signing out');
+                        await signOut(auth);
+                        setUser(null);
+                        setUserData(null);
                     }
-                } catch (error) {
-                    console.error('Error fetching user data:', error);
+                } else {
+                    setUser(null);
+                    setUserData(null);
                 }
-            } else {
+            } catch (error) {
+                console.error('Auth state error:', error);
                 setUser(null);
                 setUserData(null);
             }
