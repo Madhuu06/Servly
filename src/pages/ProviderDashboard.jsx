@@ -67,7 +67,8 @@ export default function ProviderDashboard() {
         setIsDeleting(true);
         const result = await deleteAccount();
         if (result.success) {
-            navigate('/login', { replace: true });
+            // Hard redirect — navigate() fails because auth state change unmounts the component
+            window.location.href = '/login';
         } else {
             alert(result.error || 'Failed to delete account.');
             setShowDeleteModal(false);
