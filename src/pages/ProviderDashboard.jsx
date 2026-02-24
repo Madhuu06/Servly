@@ -67,8 +67,11 @@ export default function ProviderDashboard() {
         setIsDeleting(true);
         const result = await deleteAccount();
         if (result.success) {
-            // Hard redirect — navigate() fails because auth state change unmounts the component
-            window.location.href = '/login';
+            // Force a full page reload to /login after a tiny delay
+            // so Firebase auth state fully clears first
+            setTimeout(() => {
+                window.location.replace('/login');
+            }, 100);
         } else {
             alert(result.error || 'Failed to delete account.');
             setShowDeleteModal(false);
