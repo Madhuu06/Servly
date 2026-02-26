@@ -11,14 +11,13 @@ import ProviderList from './components/ProviderList';
 import { AlertCircle, RefreshCw, Navigation, User } from 'lucide-react';
 
 function App() {
-    const [selectedCategory, setSelectedCategory] = useState('all');
     const [selectedService, setSelectedService] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
 
     const { userData } = useAuth();
     const navigate = useNavigate();
     const { userLocation, loading: locationLoading, error: locationError, requestLocation } = useLocation();
-    const { providers, loading: providersLoading, error: providersError } = useProviders(selectedCategory);
+    const { providers, loading: providersLoading, error: providersError } = useProviders('all');
 
     const sortedProviders = useMemo(() => {
         if (!userLocation) return providers;
@@ -40,7 +39,6 @@ function App() {
             <MapBackground
                 providers={sortedProviders}
                 onMarkerClick={setSelectedService}
-                filteredCategory={selectedCategory}
                 userLocation={userLocation}
                 selectedService={selectedService}
             />
@@ -138,22 +136,5 @@ function App() {
     );
 }
 
-/* ── Category chips — imported from data ── */
-import { categories } from './data/services';
-
-function CategoryChips({ selectedCategory, onSelectCategory }) {
-    return categories.map(cat => (
-        <button
-            key={cat.id}
-            onClick={() => onSelectCategory(cat.id)}
-            className={`px-3 py-1.5 rounded-full text-xs whitespace-nowrap font-medium shadow transition-all ${selectedCategory === cat.id
-                ? 'bg-gray-900 text-white shadow-md'
-                : 'bg-white text-gray-600 hover:bg-gray-50'
-                }`}
-        >
-            {cat.label}
-        </button>
-    ));
-}
-
 export default App;
+
