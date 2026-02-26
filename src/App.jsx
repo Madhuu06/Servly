@@ -25,6 +25,12 @@ function App() {
         return sortProvidersByDistance(providers, userLocation);
     }, [providers, userLocation]);
 
+    // Only show providers within 5 km in the nearby list
+    const nearbyProviders = useMemo(() => {
+        if (!userLocation) return sortedProviders;
+        return sortedProviders.filter(p => (p.distance ?? Infinity) <= 5);
+    }, [sortedProviders, userLocation]);
+
     const isLoading = providersLoading || locationLoading;
 
     return (
@@ -73,7 +79,7 @@ function App() {
             {/* ── Floating provider list ── */}
             <div className="absolute top-[68px] left-4 bottom-4 w-[320px] z-[400]">
                 <ProviderList
-                    services={sortedProviders}
+                    services={nearbyProviders}
                     onSelectService={setSelectedService}
                     selectedService={selectedService}
                     searchTerm={searchTerm}

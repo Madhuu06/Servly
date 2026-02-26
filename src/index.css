@@ -128,3 +128,26 @@ body,
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
+
+/* ── Leaflet popup overrides ── */
+.servly-popup .leaflet-popup-content-wrapper {
+  border-radius: 14px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+  padding: 0;
+}
+
+.servly-popup .leaflet-popup-content {
+  margin: 12px 14px;
+  font-family: 'Inter', -apple-system, sans-serif;
+}
+
+.servly-popup .leaflet-popup-tip {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.servly-popup .leaflet-popup-close-button {
+  top: 6px !important;
+  right: 8px !important;
+  font-size: 16px;
+  color: #9ca3af;
+}
